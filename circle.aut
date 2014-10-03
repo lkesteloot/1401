@@ -3,7 +3,7 @@
 
      *** Index variables.
                ORG  87
-     X1        DSA  0
+     X1        DSA  0              X variable.
 
      *** Main routine.
                ORG  333
@@ -11,43 +11,40 @@
 
      *** Next line.
      NXTLN     MCW  ONE,X1         Reset X
-               CS   299            Clear printer
+               CS   332            Clear printer area
+               CS
 
      * Center Y
-               MCW  Y,CENY
-               S    @050@,CENY
+               MCW  Y,CENY         Y
+               S    @050@,CENY          - 50
      * Square centered Y.
                ZA   CENY,YSQR-4
+               A    CENY,YSQR-4    (        )*3  (fix aspect ratio)
                A    CENY,YSQR-4
-               A    CENY,YSQR-4
-               M    CENY,YSQR
+               M    CENY,YSQR      (           )^2
 
      *** Next pixel.
-     NXTPX     NOP
 
      * Center X
-               MCW  X1,CENX
-               S    @050@,CENX
+     NXTPX     MCW  X1,CENX        X
+               S    @050@,CENX          - 50
      * Square centered X.
                ZA   CENX,XSQR-4
-               M    CENX,XSQR
+               M    CENX,XSQR      (        )^2
 
      * Add to YSQR
-               ZA   XSQR,DSQR
-               A    YSQR,DSQR
+               ZA   XSQR,DSQR      (X - 50)^2
+               A    YSQR,DSQR                 + (Y - 50)^2
 
      * See if we're inside the circle.
-               C    DSQR,RSQR
-               BL   SKDRAW
+               C    DSQR,RSQR      D^2 < R^2 ?
+               BL   SKIP
 
      * Draw pixel.
                MN   STAR,200&X1
                MZ   STAR,200&X1
 
-     SKDRAW    NOP
-
-     *** Increment X.
-               A    ONE,X1
+     SKIP      A    ONE,X1         X++
 
      *** See if we're done.
                C    X1,WIDTH
@@ -57,8 +54,7 @@
      *** Print our line.
      DONELN    W
 
-     *** Increment Y.
-               A    ONE,Y
+               A    ONE,Y          Y++
 
      *** See if we're done.
                C    HEIGHT,Y
@@ -71,7 +67,6 @@
 
      *** Variables.
      Y         DCW  000
-     PRNLOC    DCW  000
 
      *** Constants.
      WIDTH     DCW  100
@@ -86,6 +81,5 @@
      XSQR      DCW  0000000     Squared centered X
      YSQR      DCW  0000000     Squared centered Y
      DSQR      DCW  0000000     Distance from center
-
 
                END  START
