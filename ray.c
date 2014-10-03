@@ -13,6 +13,7 @@
 //    limitations under the License.
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
@@ -84,9 +85,19 @@ int main()
                     word bright = (xn*xl + yn*yl + zn*zl)/r;
                     if (bright >= 0) {
                         // Light side of sphere.
+
+                        // Add some noise.
+                        bright += (rand() % 7) - 3;
+
+                        // Clamp.
+                        if (bright < 0) {
+                            bright = 0;
+                        }
                         if (bright > 99) {
                             bright = 99;
                         }
+
+                        // Convert to ASCII art.
                         line[column] = ",-:;+=*?#@"[bright/10];
                     } else {
                         // Dark side of sphere.
