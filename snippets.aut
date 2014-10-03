@@ -1,0 +1,34 @@
+
+     * Useful snippets of code for 1401.
+
+     * How to declare index registers. They must be called X1, X2, and X3 and must be at these locations.
+
+               ORG  87
+     X1        DSA  0                   Index register 1
+               ORG  92
+     X2        DSA  0                   Index register 2
+               ORG  97
+     X3        DSA  0                   Index register 3
+
+     * How to make a function call:
+
+               B    FOO                 Stores next address in B register.
+
+     FOO       SBR  FOOX&3              Store B in branch of return instruction.
+               ...
+     FOOX      B    000                 Return
+
+     * How to clear a number:
+
+               ZA   @0@,FOO             Also sets positive zone bits (A and B).
+
+     * How to copy an address:
+
+               MCW  FOO,BAR             Moves bytes until either has word mark.
+
+     * How to increment an address:
+
+               MA   @002@,BAR           Increments BAR address by 2.
+                                        Don't use A (add), since that doesn't know about
+                                        address encoding.
+
