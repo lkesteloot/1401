@@ -8,7 +8,7 @@ The `circle.aut` program draws a circle on the printer. It was written to test t
 loop and printing logic.
 
 The `ray.c` program is a fixed-point ray tracer in C. It's the prototype code for the
-real version. It prints the scene on the console.
+real version. It prints the scene on the console. To run it, type `make`.
 
 To run the `.aut` files, install ROPE (see below).
 

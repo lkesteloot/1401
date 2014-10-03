@@ -15,11 +15,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 // Fixed-point ray tracer prototype for the IBM 1401 version.
 
 typedef signed long word;
+
+// Integer square root. Uses Newton's method.
+// See http://en.wikipedia.org/wiki/Integer_square_root
+word isqrt(word n)
+{
+    // Seed at n.
+    word x = n;
+    word previous;
+
+    do {
+        previous = x;
+
+        // This converges quadratically.
+        x = (x + n/x)/2;
+
+        // Keep going until we're making no more progress.
+    } while (x != previous);
+
+    return x;
+}
 
 int main()
 {
@@ -67,7 +86,7 @@ int main()
 
             if (disc >= 0) {
                 // Can always pick "-" because "a" is always positive.
-                word t = (-b - (word) sqrt(disc)) * 100 / (2*a);
+                word t = (-b - isqrt(disc)) * 100 / (2*a);
 
                 // Make sure the intersection point is ahead of us.
                 if (t >= 0) {
