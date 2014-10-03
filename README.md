@@ -1,6 +1,17 @@
 
 These are programs for the [IBM 1401](https://en.wikipedia.org/wiki/IBM_1401) computer.
 
+The goal is to write a simple ray tracer. It will read a scene description from punch cards
+and print the image on the printer using ASCII art.
+
+The `circle.aut` program draws a circle on the printer. It was written to test the
+loop and printing logic.
+
+The `ray.c` program is a fixed-point ray tracer in C. It's the prototype code for the
+real version. It prints the scene on the console.
+
+To run the `.aut` files, install ROPE (see below).
+
 Resources
 ---------
 
