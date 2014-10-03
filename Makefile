@@ -1,5 +1,5 @@
 
-.PHONY: all
+.PHONY: all clean
 
 all: ray
 	./ray
@@ -7,3 +7,5 @@ all: ray
 ray: ray.c Makefile
 	cc -Wall ray.c -o ray -lm
 
+clean:
+	rm -f ray *.out *.lst *.cd *.cdr *.brk
