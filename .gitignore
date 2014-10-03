@@ -2,3 +2,5 @@
 *.lst
 *.cd
 *.cdr
+*.brk
+/ray
