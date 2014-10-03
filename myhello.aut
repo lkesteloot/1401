@@ -1,0 +1,35 @@
+               JOB  My Hello World
+               CTL  3311
+
+     * Point to text.
+               ORG  87
+     X1        DSA  0
+     
+     * Point to printer area.
+               ORG  92
+     X2        DSA  0
+
+     * Our message.
+               ORG  333
+     MSG       DCW  0
+               DCW  @Hello World.@
+
+     * Main
+     START     SBR  X1,MSG&1
+               SBR  X2,201
+     
+     NEXT      MN   0&X1,0&X2 
+               MZ   0&X1,0&X2
+               BCE  DONE,0&X1,.
+               SBR  X1,1&X1
+               SBR  X2,1&X2
+               B    NEXT
+     
+     DONE      W
+     FINIS     H    FINIS
+               H
+     
+     * Character being moved.
+     CH        DCW  @ @  
+     
+               END  START
