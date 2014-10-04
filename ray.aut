@@ -15,69 +15,53 @@
 
      *** Main routine.
                ORG  333
-     START     ZA   +50,Y               Reset Y
+     START     ZA   +50,YV              Reset YV
 
      *** Next line.
-     NXTLN     ZA   -50,X               Reset X
-               SBR  X1,201              Reset column in printer buffer
+     NXTLN     SBR  X1,201              Reset column in printer buffer
                CS   332                 Clear printer area
                CS
-
-     * Square Y.
-               ZA   Y,YSQR-4            Y
-               A    Y,YSQR-4              * 3  (fix aspect ratio)
-               A    Y,YSQR-4
-               M    Y,YSQR              (   )^2
+               ZA   -50,XV              Reset XV
 
      *** Next pixel.
 
-     * Square X.
-     NXTPX     ZA   X,XSQR-4            X
-               M    X,XSQR               ^2
+     * Trace a ray from the camera into the scene.
+     NXTPX     ZA   X0,TRX0
+               ZA   Y0,TRY0
+               ZA   Z0,TRZ0
+               ZA   XV,TRXV
+               ZA   YV,TRYV
+               ZA   ZV,TRZV
+               B    TRACE
 
-     * Add to YSQR
-               ZA   XSQR,DSQR           X^2
-               A    YSQR,DSQR               + Y^2 = D^2
-
-     * See if we're inside the circle.
-               C    DSQR,RSQR           D^2 < R^2 ?
-               BL   SKIP
+     * See if we hit the sphere.
+               BCE  SKIP,TRHIT,0        Skip if missed.
 
      * Draw pixel.
                MN   STAR,0&X1
                MZ   STAR,0&X1
 
-     SKIP      A    +1,X                X++
+     SKIP      A    +1,XV               XV++
                MA   @001@,X1            X1++
 
      *** See if we're done.
                ZA   MAXX,TMP3           MAXX
-               S    X,TMP3                   - X
-               BWZ  NXTPX,TMP3,B        X <= MAXX, MAXX - X >= 0
+               S    XV,TMP3                  - XV
+               BWZ  NXTPX,TMP3,B        XV <= MAXX, MAXX - XV >= 0
 
      *** Print our line.
                W
 
-               A    -1,Y                Y--
+               A    -2,YV               YV--
 
      *** See if we're done.
                ZA   MINY,TMP3           MINY
-               S    Y,TMP3                   - Y
-               BWZ  NXTLN,TMP3,K        Y >= MINY, MINY - Y <= 0
+               S    YV,TMP3                  - YV
+               BWZ  NXTLN,TMP3,K        YV >= MINY, MINY - YV <= 0
 
      *** Done.
      FINIS     H    FINIS
                H
-
-     *** Variables.
-     X         DCW  000
-     Y         DCW  000
-
-     *** Constants.
-     MAXX      DCW  +051                One past max X
-     MINY      DCW  -051                One past min Y
-     STAR      DC   @*@
-     RSQR      DCW  0001600
 
      *** Scene.
      XC        DCW  00000               Sphere center
@@ -85,12 +69,21 @@
      ZC        DCW  -00200
      R2        DCW  00000022500         Sphere radius squared
 
+     ** Initial ray.
+     X0        DCW  00000               Position
+     Y0        DCW  00000
+     Z0        DCW  00050
+     XV        DCW  00000               Direction
+     YV        DCW  00000
+     ZV        DCW  -00050
+
+     *** Constants.
+     MAXX      DCW  +051                One past max XV
+     MINY      DCW  -051                One past min Y
+     STAR      DC   @*@
+
      *** Work area.
-     XSQR      DCW  0000000             Squared centered X
-     YSQR      DCW  0000000             Squared centered Y
-     DSQR      DCW  0000000             Distance from center
      TMP3      DCW  000                 Temporary working space
-     TMP7      DCW  0000000             Temporary working space
 
      ****************************************************************
      * Subroutine to trace a ray. Given a ray and a (global) scene,
@@ -154,7 +147,7 @@
                S    R2,TRC
 
      * Discriminant: B*B - 4*A*C
-               ZA   TRB,TRDISC-14       B*B
+               ZA   TRB,TRDISC-13       B*B
                M    TRB,TRDISC
                ZA   TRA,TRTMP-12        A*C
                M    TRC,TRTMP
@@ -190,7 +183,7 @@
      TRA       DCW  #11                 Quadratic equation coefficients
      TRB       DCW  #12
      TRC       DCW  #11
-     TRDISC    DCW  #27                 Quadratic equation discriminant
+     TRDISC    DCW  #25                 Quadratic equation discriminant
      TRTMP     DCW  #23
 
      ****************************************************************
