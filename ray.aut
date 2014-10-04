@@ -67,7 +67,7 @@
      XC        DCW  00000               Sphere center
      YC        DCW  00000
      ZC        DCW  -00200
-     R2        DCW  00000022500         Sphere radius squared
+     R2        DCW  00000022500         Sphere radius (150) squared
 
      ** Initial ray.
      X0        DCW  00000               Position
@@ -103,7 +103,11 @@
      * Upon return:
      *
      *     TRHIT   1 if hit, 0 if not.
-     *     TRDIST  Distance to object, in lengths of the direction vector.
+     *     TRDIST  Distance to object, in lengths of the direction
+     *             vector, times 100.
+     *     TRXH    Hit location
+     *     TRYH
+     *     TRZH
      *
 
      TRACE     SBR  TRACEX&3            Save return address
@@ -159,6 +163,45 @@
                BWZ  TRNEG,TRDISC,K      Jump if TRDISC is negative (missed the sphere).
 
                MCW  @1@,TRHIT
+
+     * Compute the distance to the hit point. (-b - isqrt(disc)) / (2*a)
+               ZA   TRDISC,SQIN
+               B    SQRT                 sqrt(DISC)
+               ZS   SQOUT,TRDIST        -
+               S    TRB,TRDIST                      - B
+
+     * We can test right here if the distance is positive (ahead of us in the ray)
+     * because A is always positive.
+               BM   TRDIST,TRACEX       DIST is negative, sphere is behind us.
+
+     * We divide by 2*A. We also want two extra digits of precision, otherwise
+     * we'll end up with crude numbers like 2 and 3. We do this by effectively
+     * multiplying TRDIST by 100 when we set up the divide.
+               ZA   TRDIST,TRTMP-2      Set up for divide, *100.
+               MZ   TRDIST,TRTMP        Move sign.
+               MZ   @2@,TRTMP-2         Clear previous sign we have moved to.
+               D    @2@,TRTMP-9         Divide by 2.
+               ZA   TRTMP-2,TRTMP       Set up for divide again.
+               D    TRA,TRTMP-9         Divide by A.
+               ZA   TRTMP-12,TRDIST     Move to output.
+
+     * Compute intersection point.
+               ZA   TRDIST,TRTMP-6      DIST
+               M    TRXV,TRTMP               * XV
+               ZA   TRTMP-2,TRXH                  / 100
+               A    TRX0,TRXH                           + X0
+
+               ZA   TRDIST,TRTMP-6      DIST
+               M    TRYV,TRTMP               * YV
+               ZA   TRTMP-2,TRYH                  / 100
+               A    TRY0,TRYH                           + Y0
+
+               ZA   TRDIST,TRTMP-6      DIST
+               M    TRZV,TRTMP               * ZV
+               MZ   TRTMP,TRTMP-2       (move zone to prepare for divide by 100)
+               ZA   TRTMP-2,TRZH                  / 100
+               A    TRZ0,TRZH                           + Z0
+
                B    TRACEX
 
      TRNEG     MCW  @0@,TRHIT
@@ -175,6 +218,10 @@
 
      * Output fields.
      TRHIT     DCW  #1                  Hit (1) or miss (0)
+     TRDIST    DCW  #10                 Distance in units of ray length, *100
+     TRXH      DCW  #5                  Hit location
+     TRYH      DCW  #5
+     TRZH      DCW  #5
 
      * Internal work space.
      TRXR      DCW  #5                  Ray position relative to sphere
@@ -285,5 +332,43 @@
      * Internal work space.
      SQPREV    DCW  #25
      SQTMP     DCW  #51
+
+     ****************************************************************
+     * Print a numeric field.
+     *
+     * The numeric field is printed with an optional "-" sign in front,
+     * and the sign bits are cleared.
+     *
+     * Entry point:  PRINT
+     *
+     * The caller must set the following fields:
+     *
+     *     PRARG   Address of field to print. The field must be terminated
+     *             by a word mark and must be shorter than 50 characters.
+     *             It may be signed or unsigned.
+     *
+
+     PRINT     SBR  PRINTX&3            Save return address
+
+               CS   332                 Clear print area
+               CS
+               MCW  PRARG,*+4           Copy address to first arg of LCA
+               LCA  000,PRLOC           Copy field to print area.
+               SBR  PRNEG+6             Save location so we can print sign there.
+               BM   PRNEG,PRLOC         If negative, print negative sign.
+               B    PRPOS               Positive or unsigned.
+
+     PRNEG     MCW  @-@,000             Print negative sign in front of number.
+
+     PRPOS     MZ   @2@,PRLOC           Clear sign, makes it easier to read.
+               W                        Print.
+
+     PRINTX    B    000
+
+     * Input fields.
+     PRARG     DSA  000                 Address of field to print (lowest order byte).
+
+     * Internal work space.
+     PRLOC     EQU  250                 Where we're printing to.
 
                END  START

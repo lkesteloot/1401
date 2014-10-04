@@ -75,14 +75,11 @@
 
           FIVE DCW  5
 
-     * How to divide two integers (B / A) of length LA and LB:
+     * How to divide two integers (A / B) of length LA and LB using temporary field C of size LC = LA + LB + 1:
 
-               ZA   B                   Set sign bits on B.
-               S    TMP                 Clear temporary space (LC = LA + LB + 1).
-               MCS  B,TMP-LA-1          Move dividend.
-               MZ   B,TMP               Set sign of remainder. Don't know why we need this.
-               D    A,TMP-LC+1          Divide, giving high-order byte address.
-               MCW  TMP-LA-1,RESULT     Move result.
+               ZA   A,C                 Move A into C and set sign bits (required).
+               D    B,C-LA+1            Divide, giving high-order address of A.
+               MCW  C-LB-1,RESULT       Move result.
 
        See more examples, with rounding and decimal places, in "Basic Coding Techniques for the 1401
        Computer", page 33 and 34.
@@ -117,4 +114,14 @@
 
                MCW  @X@,FOO             Fill last character (leaves B at FOO-1)
                MCW  FOO                 Copy FOO to FOO-1 and decrease to bottom of FOO
+
+     ***********************************************************************************************
+     * Misc
+
+     * How to print a field:
+
+               CS   332
+               CS
+               LCA  FOO,250
+               W
 

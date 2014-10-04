@@ -18,4 +18,5 @@ Instructions
                     According to one source, B must be at least one byte longer than A.
      Z    MCS  MCS  Move numbers, suppress leading zeros, remove sign bits.
                     Even strips the last 0 if the entire field is zero.
+     H    SBR  SBR  Stores B (explicitly or from previous op) to A. WM not affected.
 
