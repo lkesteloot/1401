@@ -9,21 +9,21 @@
      * printer.
      *
 
-     *** Index registers.
+     * Index registers.
                ORG  87
      X1        DSA  0                   Index register 1 (print column).
 
-     *** Main routine.
+     * Main routine.
                ORG  333
      START     ZA   +50,YV              Reset YV
 
-     *** Next line.
+     * Next line.
      NXTLN     SBR  X1,201              Reset column in printer buffer
                CS   332                 Clear printer area
                CS
                ZA   -50,XV              Reset XV
 
-     *** Next pixel.
+     * Next pixel.
 
      * Trace a ray from the camera into the scene.
      NXTPX     ZA   X0,TRX0
@@ -37,6 +37,18 @@
      * See if we hit the sphere.
                BCE  SKIP,TRHIT,0        Skip if missed.
 
+     * Compute surface normal.
+               ZA   TRXH,XN             X
+               S    XC,XN                 - XC
+               ZA   TRYH,YN             Y
+               S    YC,YN                 - YC
+               ZA   TRZH,ZN             Z
+               S    ZC,ZN                 - ZC
+
+     *         B    PRALL
+
+               BM   SKIP,XN             Skip if XN is negative.
+
      * Draw pixel.
                MN   STAR,0&X1
                MZ   STAR,0&X1
@@ -44,32 +56,33 @@
      SKIP      A    +1,XV               XV++
                MA   @001@,X1            X1++
 
-     *** See if we're done.
+     * See if we're done.
                ZA   MAXX,TMP3           MAXX
                S    XV,TMP3                  - XV
                BWZ  NXTPX,TMP3,B        XV <= MAXX, MAXX - XV >= 0
 
-     *** Print our line.
+     * Print our line.
                W
 
                A    -2,YV               YV--
 
-     *** See if we're done.
+     * See if we're done.
                ZA   MINY,TMP3           MINY
                S    YV,TMP3                  - YV
                BWZ  NXTLN,TMP3,K        YV >= MINY, MINY - YV <= 0
 
-     *** Done.
+     * Done.
      FINIS     H    FINIS
                H
 
-     *** Scene.
+     * Scene.
      XC        DCW  00000               Sphere center
      YC        DCW  00000
      ZC        DCW  -00200
-     R2        DCW  00000022500         Sphere radius (150) squared
+     R         DCW  150                 Sphere radius
+     R2        DCW  22500               Sphere radius squared
 
-     ** Initial ray.
+     * Initial ray.
      X0        DCW  00000               Position
      Y0        DCW  00000
      Z0        DCW  00050
@@ -77,12 +90,17 @@
      YV        DCW  00000
      ZV        DCW  -00050
 
-     *** Constants.
+     * Lighting and shading.
+     XN        DCW  00000               Surface normal
+     YN        DCW  00000
+     ZN        DCW  00000
+
+     * Constants.
      MAXX      DCW  +051                One past max XV
      MINY      DCW  -051                One past min Y
      STAR      DC   @*@
 
-     *** Work area.
+     * Work area.
      TMP3      DCW  000                 Temporary working space
 
      ****************************************************************
@@ -188,11 +206,13 @@
      * Compute intersection point.
                ZA   TRDIST,TRTMP-6      DIST
                M    TRXV,TRTMP               * XV
+               MZ   TRTMP,TRTMP-2       (move zone to prepare for divide by 100)
                ZA   TRTMP-2,TRXH                  / 100
                A    TRX0,TRXH                           + X0
 
                ZA   TRDIST,TRTMP-6      DIST
                M    TRYV,TRTMP               * YV
+               MZ   TRTMP,TRTMP-2       (move zone to prepare for divide by 100)
                ZA   TRTMP-2,TRYH                  / 100
                A    TRY0,TRYH                           + Y0
 
@@ -363,12 +383,57 @@
      PRPOS     MZ   @2@,PRLOC           Clear sign, makes it easier to read.
                W                        Print.
 
-     PRINTX    B    000
+     PRINTX    B    000                 Return
 
      * Input fields.
      PRARG     DSA  000                 Address of field to print (lowest order byte).
 
      * Internal work space.
      PRLOC     EQU  250                 Where we're printing to.
+
+     ****************************************************************
+     * Print all useful globals.
+     *
+     * Entry point:  PRALL
+     *
+
+     PRALL     SBR  PRALLX&3            Save return address
+
+               SBR  PRARG,X0
+               B    PRINT
+               SBR  PRARG,Y0
+               B    PRINT
+               SBR  PRARG,Z0
+               B    PRINT
+
+               SBR  PRARG,XV
+               B    PRINT
+               SBR  PRARG,YV
+               B    PRINT
+               SBR  PRARG,ZV
+               B    PRINT
+
+               SBR  PRARG,XC
+               B    PRINT
+               SBR  PRARG,YC
+               B    PRINT
+               SBR  PRARG,ZC
+               B    PRINT
+
+               SBR  PRARG,TRXH
+               B    PRINT
+               SBR  PRARG,TRYH
+               B    PRINT
+               SBR  PRARG,TRZH
+               B    PRINT
+
+               SBR  PRARG,XN
+               B    PRINT
+               SBR  PRARG,YN
+               B    PRINT
+               SBR  PRARG,ZN
+               B    PRINT
+
+     PRALLX    B    000                 Return
 
                END  START
