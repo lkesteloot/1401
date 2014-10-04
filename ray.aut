@@ -234,4 +234,56 @@
      * Internal work space.
      DOTMP     DCW  #11
 
+     ****************************************************************
+     * Integer square root. Uses Newton's method.
+     * See http://en.wikipedia.org/wiki/Integer_square_root
+     *
+     * Entry point:  SQRT
+     *
+     * The caller must set the following fields:
+     *
+     *     SQIN    Non-negative integer (25 digits).
+     *
+     * Upon return:
+     *
+     *     SQOUT   Square root of SQIN.
+     *
+     * The algorithm iterates this function:
+     *
+     *     X' = (X + N/X)/2
+     *
+     * Where N is the numbers whose root we want. It converges
+     * quadratically and is guaranteed to converge if X starts
+     * with the value N. The algorithm is finished when
+     * successive values of X stop changing.
+     *
+
+     SQRT      SBR  SQRTX&3             Save return address
+
+               ZA   SQIN,SQOUT          Seed iteration with N
+
+     SQLOOP    ZA   SQOUT,SQPREV        Save old value of X
+
+               ZA   SQIN,SQTMP          N/X
+               D    SQOUT,SQTMP-24
+               A    SQOUT,SQTMP-26          + X
+               ZA   SQTMP-26,SQTMP
+               D    @2@,SQTMP-24        (     )/2
+               ZA   SQTMP-2,SQOUT
+               C    SQOUT,SQPREV        X = previous X?
+               BE   SQRTX               Yes, we're done.
+               B    SQLOOP              Keep going.
+
+     SQRTX     B    000                 Return
+
+     * Input fields.
+     SQIN      DCW  #25
+
+     * Output fields.
+     SQOUT     DCW  #25
+
+     * Internal work space.
+     SQPREV    DCW  #25
+     SQTMP     DCW  #51
+
                END  START

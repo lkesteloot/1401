@@ -18,4 +18,5 @@ Resources
 - [ROPE 1401 assembler, emulator, and IDE](https://github.com/jpf/ROPE)
 - [1401 Reference manual](http://bitsavers.trailing-edge.com/pdf/ibm/140x/A24-1403-5_1401_Reference_Apr62.pdf)
 - [Autocoder specification](http://www.bitsavers.org/pdf/ibm/140x/J24-1434-2_autocoderSpec_61.pdf)
+- [Coding techniques](http://bitsavers.trailing-edge.com/pdf/ibm/140x/TIE4-0064_1401codingTechniq.pdf)
 

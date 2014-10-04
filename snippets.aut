@@ -27,22 +27,65 @@
 
      * How to clear a number:
 
-               ZA   @0@,FOO             Also sets positive zone bits (A and B).
+               S    FOO                 Also sets zone bits.
 
      * How to copy a number:
 
                ZA   FOO,BAR             FOO can be shorter. Sets sign bits on BAR.
 
-     * Compare two numbers:
+     * How to increment a number:
 
+               A    *-6,FOO             *-6 points to "A", which is a +1. It also has
+                                        a word mark, since it's the opcode.
+
+     * How to double a number:
+
+               A    FOO
+
+     * How to compare two numbers (of the same length):
+
+               S    @0@,A               Set sign bit and fill with zeros (optional).
+               S    @0@,B               Set sign bit and fill with zeros (optional).
+               C    A,B                 Compare to see if exactly equal.
+               BE   EQUAL               Two numbers are equal.
                ZA   A,TMP               A
                S    B,TMP                 - B
-               BWZ  ISNEG,TMP,K         Jump if negative (A < B)
-               BWZ  ISPOS,TMP,B         Jump if positive (A > B)
-               The zero case is tricky. The sign of zero will be the sign of the second parameter of
-               the S instructions, which is "TMP", which is "A" in the above example. If you know
-               the sign of "A" or "B" ahead of time, then choose the subtraction so that you can
-               check <= or >=. Otherwise you must check for zero explicitly.
+               BM   BBIGGER,E           Check sign bit (BM = jump if negative).
+               (else B is smaller)
+
+     * How to check if a number is zero (including blanks, positive, negative):
+
+               MCS  A,TMP               Moves, suppresses zeros, and removes all sign bits.
+               BCE  ISZERO,TMP,         There's a space after the last comma.
+               * Note that TMP must be at least one byte longer than A (don't know why,
+               * and this isn't documented in the spec).
+
+     * How to copy a number and suppress leading zeros except for the unit position:
+
+               MN   FOO,DEST            Copies last digit (loses sign bit).
+               MCS                      Copies rest, suppressing zeros.
+
+     * How to round a number:
+
+               MZ   FOO,FIVE            Make 5 have the same sign as FOO
+               A    FIVE,FOO            Add 5 (or -5) to FOO
+               MZ   @ @,FIVE            Clear zone bits of 5 (optional)
+               MZ   FOO,FOO-1           Move size bits to next digits.
+               (and use FOO-1 after that)
+
+          FIVE DCW  5
+
+     * How to divide two integers (B / A) of length LA and LB:
+
+               ZA   B                   Set sign bits on B.
+               S    TMP                 Clear temporary space (LC = LA + LB + 1).
+               MCS  B,TMP-LA-1          Move dividend.
+               MZ   B,TMP               Set sign of remainder. Don't know why we need this.
+               D    A,TMP-LC+1          Divide, giving high-order byte address.
+               MCW  TMP-LA-1,RESULT     Move result.
+
+       See more examples, with rounding and decimal places, in "Basic Coding Techniques for the 1401
+       Computer", page 33 and 34.
 
      ***********************************************************************************************
      * Addresses and pointers
@@ -69,4 +112,9 @@
      * How to copy a string:
 
                LCD  FOO,BAR             Stops at word mark of FOO.
+
+     * How to fill a string:
+
+               MCW  @X@,FOO             Fill last character (leaves B at FOO-1)
+               MCW  FOO                 Copy FOO to FOO-1 and decrease to bottom of FOO
 
