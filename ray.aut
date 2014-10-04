@@ -1,0 +1,81 @@
+               JOB  Ray tracer
+               CTL  3311
+
+     *** Index registers.
+               ORG  87
+     X1        DSA  0                   Index register 1 (print column).
+
+     *** Main routine.
+               ORG  333
+     START     ZA   +50,Y               Reset Y
+
+     *** Next line.
+     NXTLN     ZA   -50,X               Reset X
+               SBR  X1,201              Reset column in printer buffer
+               CS   332                 Clear printer area
+               CS
+
+     * Square Y.
+               ZA   Y,YSQR-4            Y
+               A    Y,YSQR-4              * 3  (fix aspect ratio)
+               A    Y,YSQR-4
+               M    Y,YSQR              (   )^2
+
+     *** Next pixel.
+
+     * Square X.
+     NXTPX     ZA   X,XSQR-4            X
+               M    X,XSQR               ^2
+
+     * Add to YSQR
+               ZA   XSQR,DSQR           X^2
+               A    YSQR,DSQR               + Y^2 = D^2
+
+     * See if we're inside the circle.
+               C    DSQR,RSQR           D^2 < R^2 ?
+               BL   SKIP
+
+     * Draw pixel.
+               MN   STAR,0&X1
+               MZ   STAR,0&X1
+
+     SKIP      A    +1,X                X++
+               MA   @001@,X1            X1++
+
+     *** See if we're done.
+               ZA   MAXX,TMP3           MAXX
+               S    X,TMP3                   - X
+               BWZ  NXTPX,TMP3,B        X <= MAXX, MAXX - X >= 0
+
+     *** Print our line.
+               W
+
+               A    -1,Y                Y--
+
+     *** See if we're done.
+               ZA   MINY,TMP3           MINY
+               S    Y,TMP3                   - Y
+               BWZ  NXTLN,TMP3,K        Y >= MINY, MINY - Y <= 0
+
+     *** Done.
+     FINIS     H    FINIS
+               H
+
+     *** Variables.
+     X         DCW  000
+     Y         DCW  000
+
+     *** Constants.
+     MAXX      DCW  +051                One past max X
+     MINY      DCW  -051                One past min Y
+     STAR      DC   @*@
+     RSQR      DCW  0001600
+
+     *** Work area.
+     XSQR      DCW  0000000             Squared centered X
+     YSQR      DCW  0000000             Squared centered Y
+     DSQR      DCW  0000000             Distance from center
+     TMP3      DCW  000                 Temporary working space
+     TMP7      DCW  0000000             Temporary working space
+
+               END  START

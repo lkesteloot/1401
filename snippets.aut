@@ -1,6 +1,7 @@
 
      * Useful snippets of code for 1401.
 
+     ***********************************************************************************************
      * How to declare index registers. They must be called X1, X2, and X3 and must be at these locations.
 
                ORG  87
@@ -10,6 +11,9 @@
                ORG  97
      X3        DSA  0                   Index register 3
 
+     ***********************************************************************************************
+     * Program structure
+
      * How to make a function call:
 
                B    FOO                 Stores next address in B register.
@@ -18,9 +22,26 @@
                ...
      FOOX      B    000                 Return
 
+     ***********************************************************************************************
+     * Numbers
+
      * How to clear a number:
 
                ZA   @0@,FOO             Also sets positive zone bits (A and B).
+
+     * Compare two numbers:
+
+               ZA   A,TMP               A
+               S    B,TMP                 - B
+               BWZ  ISNEG,TMP,K         Jump if negative (A < B)
+               BWZ  ISPOS,TMP,B         Jump if positive (A > B)
+               The zero case is tricky. The sign of zero will be the sign of the second parameter of
+               the S instructions, which is "TMP", which is "A" in the above example. If you know
+               the sign of "A" or "B" ahead of time, then choose the subtraction so that you can
+               check <= or >=. Otherwise you must check for zero explicitly.
+
+     ***********************************************************************************************
+     * Addresses and pointers
 
      * How to copy an address:
 
@@ -31,4 +52,16 @@
                MA   @002@,BAR           Increments BAR address by 2.
                                         Don't use A (add), since that doesn't know about
                                         address encoding.
+
+     * How to set a literal address:
+
+               SBR  FOO,201             Sets FOO to 201.
+               SBR  FOO,BAR             Sets FOO to address of BAR.
+
+     ***********************************************************************************************
+     * Strings
+
+     * How to copy a string:
+
+               LCD  FOO,BAR             Stops at word mark of FOO.
 
