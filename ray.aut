@@ -1,6 +1,14 @@
                JOB  Ray tracer
                CTL  3311
 
+     ****************************************************************
+     * Ray tracer
+     * Lawrence Kesteloot, 2014
+     *
+     * Ray-traces a scene and sends the resulting image to the
+     * printer.
+     *
+
      *** Index registers.
                ORG  87
      X1        DSA  0                   Index register 1 (print column).
@@ -71,11 +79,166 @@
      STAR      DC   @*@
      RSQR      DCW  0001600
 
+     *** Scene.
+     XC        DCW  00000               Sphere center
+     YC        DCW  00000
+     ZC        DCW  -00200
+     R2        DCW  00000022500         Sphere radius squared
+
      *** Work area.
      XSQR      DCW  0000000             Squared centered X
      YSQR      DCW  0000000             Squared centered Y
      DSQR      DCW  0000000             Distance from center
      TMP3      DCW  000                 Temporary working space
      TMP7      DCW  0000000             Temporary working space
+
+     ****************************************************************
+     * Subroutine to trace a ray. Given a ray and a (global) scene,
+     * returns whether the ray intersected the object and how far.
+     *
+     * Entry point:  TRACE
+     *
+     * The caller must set the following fields:
+     *
+     *     TRX0    Position of ray
+     *     TRY0
+     *     TRZ0
+     *     TRXV    Direction of ray
+     *     TRYV
+     *     TRZV
+     *
+     * Upon return:
+     *
+     *     TRHIT   1 if hit, 0 if not.
+     *     TRDIST  Distance to object, in lengths of the direction vector.
+     *
+
+     TRACE     SBR  TRACEX&3            Save return address
+
+     * Move ray to be relative to sphere.
+               ZA   TRX0,TRXR           X0
+               S    XC,TRXR                - XC
+               ZA   TRY0,TRYR           Y0
+               S    YC,TRYR                - YC
+               ZA   TRZ0,TRZR           Z0
+               S    ZC,TRZR                - ZC
+
+     * Quadratic equation coefficients.
+               ZA   TRXV,DOX1           A = TRV*TRV
+               ZA   TRYV,DOY1
+               ZA   TRZV,DOZ1
+               ZA   TRXV,DOX2
+               ZA   TRYV,DOY2
+               ZA   TRZV,DOZ2
+               B    DOT
+               ZA   DOTV,TRA
+
+               ZA   TRXV,DOX1           B = 2*TRV*TRR
+               ZA   TRYV,DOY1
+               ZA   TRZV,DOZ1
+               ZA   TRXR,DOX2
+               ZA   TRYR,DOY2
+               ZA   TRZR,DOZ2
+               B    DOT
+               ZA   DOTV,TRB
+               A    DOTV,TRB
+
+               ZA   TRXR,DOX1           C = TRR*TRR - R*R
+               ZA   TRYR,DOY1
+               ZA   TRZR,DOZ1
+               ZA   TRXR,DOX2
+               ZA   TRYR,DOY2
+               ZA   TRZR,DOZ2
+               B    DOT
+               ZA   DOTV,TRC
+               S    R2,TRC
+
+     * Discriminant: B*B - 4*A*C
+               ZA   TRB,TRDISC-14       B*B
+               M    TRB,TRDISC
+               ZA   TRA,TRTMP-12        A*C
+               M    TRC,TRTMP
+               S    TRTMP,TRDISC
+               S    TRTMP,TRDISC
+               S    TRTMP,TRDISC
+               S    TRTMP,TRDISC
+
+               BWZ  TRNEG,TRDISC,K      Jump if TRDISC is negative (missed the sphere).
+
+               MCW  @1@,TRHIT
+               B    TRACEX
+
+     TRNEG     MCW  @0@,TRHIT
+
+     TRACEX    B    000                 Return to caller
+
+     * Input fields.
+     TRX0      DCW  #5                  Ray position
+     TRY0      DCW  #5
+     TRZ0      DCW  #5
+     TRXV      DCW  #5                  Ray direction
+     TRYV      DCW  #5
+     TRZV      DCW  #5
+
+     * Output fields.
+     TRHIT     DCW  #1                  Hit (1) or miss (0)
+
+     * Internal work space.
+     TRXR      DCW  #5                  Ray position relative to sphere
+     TRYR      DCW  #5
+     TRZR      DCW  #5
+     TRA       DCW  #11                 Quadratic equation coefficients
+     TRB       DCW  #12
+     TRC       DCW  #11
+     TRDISC    DCW  #27                 Quadratic equation discriminant
+     TRTMP     DCW  #23
+
+     ****************************************************************
+     * Dot product of two 3-vectors.
+     *
+     * Entry point:  DOT
+     *
+     * The caller must set the following fields:
+     *
+     *     DOX1    Vector 1
+     *     DOY1
+     *     DOZ2
+     *     DOX2    Vector 2
+     *     DOY2
+     *     DOZ2
+     *
+     * Upon return:
+     *
+     *     DOTV    Dot product of vectors 1 and 2.
+     *
+
+     DOT       SBR  DOTX&3              Save return address
+
+               ZA   DOX1,DOTV-6         DOX1
+               M    DOX2,DOTV                * DOX2
+
+               ZA   DOY1,DOTMP-6        DOY1
+               M    DOY2,DOTMP               * DOY2
+               A    DOTMP,DOTV          Add to dot product
+
+               ZA   DOZ1,DOTMP-6        DOZ1
+               M    DOZ2,DOTMP               * DOZ2
+               A    DOTMP,DOTV          Add to dot product
+
+     DOTX      B    000                 Return
+
+     * Input fields.
+     DOX1      DCW  #5
+     DOY1      DCW  #5
+     DOZ1      DCW  #5
+     DOX2      DCW  #5
+     DOY2      DCW  #5
+     DOZ2      DCW  #5
+
+     * Output fields.
+     DOTV      DCW  #11                 XXX might overflow?
+
+     * Internal work space.
+     DOTMP     DCW  #11
 
                END  START

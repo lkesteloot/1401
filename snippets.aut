@@ -29,6 +29,10 @@
 
                ZA   @0@,FOO             Also sets positive zone bits (A and B).
 
+     * How to copy a number:
+
+               ZA   FOO,BAR             FOO can be shorter. Sets sign bits on BAR.
+
      * Compare two numbers:
 
                ZA   A,TMP               A
@@ -57,6 +61,7 @@
 
                SBR  FOO,201             Sets FOO to 201.
                SBR  FOO,BAR             Sets FOO to address of BAR.
+               SBR  FOO                 Sets existing B to address of BAR (for saving return address).
 
      ***********************************************************************************************
      * Strings
