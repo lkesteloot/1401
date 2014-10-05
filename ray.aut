@@ -96,21 +96,13 @@
                MCW  TMP-6,ZN            Move back into ZN.
 
      * Dot with light vector.
-               B    PRALL
-
                ZA   XN,TMP-6            XN
                M    XL,TMP                 * XL
                ZA   TMP,BRIGHT
 
-               SBR  PRARG,BRIGHT
-               B    PRINT
-
                ZA   YN,TMP-6            YN
                M    YL,TMP                 * YL
                A    TMP,BRIGHT
-
-               SBR  PRARG,BRIGHT
-               B    PRINT
 
                ZA   ZN,TMP-6            ZN
                M    ZL,TMP                 * ZL
@@ -119,8 +111,6 @@
                MZ   BRIGHT,BRIGHT-2     Move sign bit.
                ZA   BRIGHT-2,BRIGHT     / 100 (because of fixed point multiply)
 
-               SBR  PRARG,BRIGHT
-               B    PRINT
                BM   DARK,BRIGHT         Check if negative (dark side of sphere).
                B    DRAW                Not negative, draw it.
 
@@ -175,7 +165,7 @@
      YV        DCW  00000
      ZV        DCW  -00050
 
-     * Keep track distance to closest sphere for this pixel.
+     * Keep track of distance to closest sphere for this pixel.
      BSTDST    DCW  #10                 Best distance so far.
      MAXDST    DCW  @9999999999@        Max distance (represents un-hit pixel).
 
@@ -190,7 +180,7 @@
 
      * Constants.
      MAXX      DCW  +051                One past max XV
-     MINY      DCW  -051                One past min Y
+     MINY      DCW  -051                One past min YV
      SHADES    DCW  @.,-:;=*?#@@        The various shades of pixels.
 
      * Work area.
@@ -465,7 +455,6 @@
      *
 
      PRINT     SBR  PRINTX&3            Save return address
-               B    PRINTX
 
                CS   332                 Clear print area
                CS
@@ -489,7 +478,7 @@
      PRLOC     EQU  250                 Where we're printing to.
 
      ****************************************************************
-     * Print all useful globals.
+     * Print some useful globals.
      *
      * Entry point:  PRALL
      *
