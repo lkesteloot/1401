@@ -45,9 +45,55 @@
                ZA   TRZH,ZN             Z
                S    ZC,ZN                 - ZC
 
-     *         B    PRALL
+     * Normalize the normal and multiply times 100.
+               S    TMP                 Clear TMP.
+               ZA   XN,TMP-2            XN*100
+               MZ   TMP-2,TMP           Move sign bit.
+               MZ   @2@,TMP-2           Clear old sign bit.
+               D    R,TMP-4                    / R
+               MCW  TMP-6,XN            Move back into XN.
 
-               BM   SKIP,XN             Skip if XN is negative.
+               S    TMP                 Clear TMP.
+               ZA   YN,TMP-2            YN*100
+               MZ   TMP-2,TMP           Move sign bit.
+               MZ   @2@,TMP-2           Clear old sign bit.
+               D    R,TMP-4                    / R
+               MCW  TMP-6,YN            Move back into YN.
+
+               S    TMP                 Clear TMP.
+               ZA   ZN,TMP-2            ZN*100
+               MZ   TMP-2,TMP           Move sign bit.
+               MZ   @2@,TMP-2           Clear old sign bit.
+               D    R,TMP-4                    / R
+               MCW  TMP-6,ZN            Move back into ZN.
+
+     * Dot with light vector.
+               B    PRALL
+
+               ZA   XN,TMP-6            XN
+               M    XL,TMP                 * XL
+               ZA   TMP,BRIGHT
+
+               SBR  PRARG,BRIGHT
+               B    PRINT
+
+               ZA   YN,TMP-6            YN
+               M    YL,TMP                 * YL
+               A    TMP,BRIGHT
+
+               SBR  PRARG,BRIGHT
+               B    PRINT
+
+               ZA   ZN,TMP-6            ZN
+               M    ZL,TMP                 * ZL
+               A    TMP,BRIGHT
+
+               MZ   BRIGHT,BRIGHT-2     Move sign bit.
+               ZA   BRIGHT-2,BRIGHT     / 100 (because of fixed point multiply)
+
+               SBR  PRARG,BRIGHT
+               B    PRINT
+               BM   SKIP,BRIGHT
 
      * Draw pixel.
                MN   STAR,0&X1
@@ -79,7 +125,7 @@
      XC        DCW  00000               Sphere center
      YC        DCW  00000
      ZC        DCW  -00200
-     R         DCW  150                 Sphere radius
+     R         DCW  00150               Sphere radius
      R2        DCW  22500               Sphere radius squared
 
      * Initial ray.
@@ -94,6 +140,10 @@
      XN        DCW  00000               Surface normal
      YN        DCW  00000
      ZN        DCW  00000
+     XL        DCW  00057               Light vector * 100
+     YL        DCW  00057
+     ZL        DCW  00057
+     BRIGHT    DCW  00000               Brightness * 100
 
      * Constants.
      MAXX      DCW  +051                One past max XV
@@ -102,6 +152,7 @@
 
      * Work area.
      TMP3      DCW  000                 Temporary working space
+     TMP       DCW  #20                 Larger temporary space
 
      ****************************************************************
      * Subroutine to trace a ray. Given a ray and a (global) scene,
@@ -369,6 +420,7 @@
      *
 
      PRINT     SBR  PRINTX&3            Save return address
+               B    PRINTX
 
                CS   332                 Clear print area
                CS
