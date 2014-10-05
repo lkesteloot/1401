@@ -12,12 +12,15 @@
      * Index registers.
                ORG  87
      X1        DSA  000                 Index register 1 (print column).
-               ORG  92
-     X2        DSA  000                 Index register 2 (shade).
+               DCW  11                  Filler to avoid new card.
+     X2        DSA  000                 Index register 2 (shade, misc).
 
      * Main routine.
                ORG  333
      START     ZA   +50,YV              Reset YV
+
+               ZA   +0,SEIDX
+               B    SELECT
 
      * Next line.
      NXTLN     SBR  X1,201              Reset column in printer buffer
@@ -101,8 +104,9 @@
      DARK      S    BRIGHT              Zero out bright.
 
      * Draw pixel.
-     DRAW      MN   BRIGHT-1,X2
-               MN   SHADES-9&X2,0&X1
+     DRAW      SBR  X2,0                Clear X2
+               MN   BRIGHT-1,X2         X2 = BRIGHT/10
+               MN   SHADES-9&X2,0&X1    Copy full character
                MZ   SHADES-9&X2,0&X1
 
      SKIP      A    +1,XV               XV++
@@ -127,12 +131,12 @@
      FINIS     H    FINIS
                H
 
-     * Scene.
+     * Sphere being rendered right now.
      XC        DCW  00000               Sphere center
      YC        DCW  00000
-     ZC        DCW  -00200
-     R         DCW  00150               Sphere radius
-     R2        DCW  22500               Sphere radius squared
+     ZC        DCW  00000
+     R         DCW  00000               Sphere radius
+     R2        DCW  00000               Sphere radius squared
 
      * Initial ray.
      X0        DCW  00000               Position
@@ -493,5 +497,65 @@
                B    PRINT
 
      PRALLX    B    000                 Return
+
+     ****************************************************************
+     * Select a sphere to render.
+     *
+     * Entry point:  SELECT
+     *
+     * The sphere data is copied to the global variables used by
+     * the TRACE routine and elsewhere.
+     *
+     * The caller must set the following fields:
+     *
+     *     SEIDX   Index of the sphere to copy (0-based).
+     *
+     * Upon return:
+     *
+     *     The XC, YC, ZC, R, and R2 variables have the
+     *     values of the specified sphere.
+     *
+
+     SELECT    SBR  SELECX&3            Save return address
+
+     * SEOFF = SEIDX * 25
+               S    SEOFF               Clear SEOFF
+               A    SEIDX,SEOFF-1       SEOFF = SEIDX * 10
+               MZ   @2@,SEOFF-1         Clear zone
+               A    SEOFF                             * 20
+               A    SEIDX,SEOFF                            + 1
+               A    SEIDX,SEOFF                            + 2
+               A    SEIDX,SEOFF                            + 3
+               A    SEIDX,SEOFF                            + 4
+               A    SEIDX,SEOFF                            + 5
+
+     * Add 20 to get to last field
+               A    @20@,SEOFF          Go to end of data.
+               MZ   @2@,SEOFF           Clear zone, prepare for MA below.
+
+     * Convert to address
+               SBR  X2,SCENE            X2 points to start of scene.
+               MA   SEOFF,X2            Add SEOFF.
+               SBR  SECOPY+3,0&X2       Store in copy instruction.
+
+     * Load into globals
+     SECOPY    MCW  000,R2              Copy radius squared
+               CHAIN 4                  Copy radius, ZC, YC, and XC
+
+     SELECX    B    000                 Return
+
+     * Input fields.
+     SEIDX     DCW  #2
+
+     * Internal work space.
+     SEOFF     DCW  #3                  Byte offset into our array
+
+     * Scene itself.
+     SCCNT     DCW  1                   Number of spheres.
+     SCENE     DCW  00000               Sphere 0 center
+               DCW  00000
+               DCW  -00200
+               DCW  00150               Sphere radius
+               DCW  22500               Sphere radius squared
 
                END  START
