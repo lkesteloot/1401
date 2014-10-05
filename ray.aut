@@ -13,13 +13,15 @@
                ORG  87
      X1        DSA  000                 Index register 1 (print column).
                DCW  11                  Filler to avoid new card.
-     X2        DSA  000                 Index register 2 (shade, misc).
+     X2        DSA  000                 Index register 2 (shade).
+               DCW  22                  Filler to avoid new card.
+     X3        DSA  000                 Index register 2 (sphere pointer).
 
      * Main routine.
                ORG  333
      START     ZA   +50,YV              Reset YV
 
-               ZA   +1,SEIDX
+               SBR  X3,SCENE
                B    SELECT
 
      * Next line.
@@ -510,7 +512,9 @@
      *
      * The caller must set the following fields:
      *
-     *     SEIDX   Index of the sphere to copy (0-based).
+     *     X3      Address of sphere to copy. Use SCENE for
+     *             the first sphere, SCENE+25 for the second, etc.
+     *             Stop when reaching SCEND.
      *
      * Upon return:
      *
@@ -520,25 +524,8 @@
 
      SELECT    SBR  SELECX&3            Save return address
 
-     * SEOFF = SEIDX * 25
-               S    SEOFF               Clear SEOFF
-               A    SEIDX,SEOFF-1       SEOFF = SEIDX * 10
-               MZ   @2@,SEOFF-1         Clear zone
-               A    SEOFF                             * 20
-               A    SEIDX,SEOFF                            + 1
-               A    SEIDX,SEOFF                            + 2
-               A    SEIDX,SEOFF                            + 3
-               A    SEIDX,SEOFF                            + 4
-               A    SEIDX,SEOFF                            + 5
-
-     * Add 20 to get to last field
-               A    @20@,SEOFF          Go to end of data.
-               MZ   @2@,SEOFF           Clear zone, prepare for MA below.
-
-     * Convert to address
-               SBR  X2,SCENE            X2 points to start of scene.
-               MA   SEOFF,X2            Add SEOFF.
-               SBR  SECOPY+3,0&X2       Store in copy instruction.
+     * Copy to MCW instruction. Add 20 to get last byte of sphere.
+               SBR  SECOPY+3,20&X3
 
      * Load into globals
      SECOPY    MCW  000,R2              Copy radius squared
@@ -546,14 +533,8 @@
 
      SELECX    B    000                 Return
 
-     * Input fields.
-     SEIDX     DCW  #2
-
-     * Internal work space.
-     SEOFF     DCW  #3                  Byte offset into our array
-
      * Scene itself.
-     SCCNT     DCW  1                   Number of spheres.
+     SCCNT     DCW  2                   Number of spheres.
      SCENE     DCW  00000               Sphere 0 center
                DCW  00000
                DCW  -00200
@@ -565,5 +546,7 @@
                DCW  -00200
                DCW  00100               Sphere radius
                DCW  10000               Sphere radius squared
+
+     SCEND     DCW  @0@                 Mark end of scene.
 
                END  START
