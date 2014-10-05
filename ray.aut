@@ -19,7 +19,7 @@
                ORG  333
      START     ZA   +50,YV              Reset YV
 
-               ZA   +0,SEIDX
+               ZA   +1,SEIDX
                B    SELECT
 
      * Next line.
@@ -397,10 +397,12 @@
                A    SQOUT,SQTMP-26          + X
                ZA   SQTMP-26,SQTMP
                D    @2@,SQTMP-24        (     )/2
-               ZA   SQTMP-2,SQOUT
+               ZA   SQTMP-2,SQOUT       Save quotient.
                C    SQOUT,SQPREV        X = previous X?
                BE   SQRTX               Yes, we're done.
-               B    SQLOOP              Keep going.
+               S    SQOUT,SQPREV        Compute SQPREV - SQOUT
+               BWZ  SQLOOP,SQPREV,B     If positive (SQOUT < SQPREV), loop.
+     *                                  Otherwise negative, regressing.
 
      SQRTX     B    000                 Return
 
@@ -557,5 +559,11 @@
                DCW  -00200
                DCW  00150               Sphere radius
                DCW  22500               Sphere radius squared
+
+               DCW  00030               Sphere 1 center
+               DCW  -00010
+               DCW  -00200
+               DCW  00100               Sphere radius
+               DCW  10000               Sphere radius squared
 
                END  START
