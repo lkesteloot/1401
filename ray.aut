@@ -28,26 +28,30 @@
                ZA   -50,XV              Reset XV
 
      * Next pixel.
+     NXTPX     MCW  MAXDST,BSTDST       Huge distance so far (nothing hit).
+               SBR  X3,SCENE            Select the first sphere.
 
-     * Trace a ray from the camera into the scene.
-     NXTPX     ZA   X0,TRX0
+     * Set up the ray from the camera.
+               ZA   X0,TRX0
                ZA   Y0,TRY0
                ZA   Z0,TRZ0
                ZA   XV,TRXV
                ZA   YV,TRYV
                ZA   ZV,TRZV
 
-               SBR  X3,SCENE            Select the first sphere
-     NXTSPH    B    SELECT
+     NXTSPH    B    SELECT              Copy selected sphere into globals.
 
-               B    TRACE               Trace this sphere
+     * Trace a ray from the camera into the scene.
+               B    TRACE               Trace this sphere.
 
      * See if we hit the sphere.
-               BCE  HITSPH,TRHIT,1      Hit it, do lighting/shading.
+               BCE  ADVSPH,TRHIT,0      Missed it, go to next sphere.
 
-               SBR  X3,25&X3            Go to next sphere.
-               BCE  MISSED,0&X3,*       If end of scene, skip pixel.
-               B    NXTSPH
+     * See if it's closer than any other hit this pixel.
+               ZA   BSTDST,TMP          BSTDST
+               S    TRDIST,TMP                 - TRDIST
+               BM   ADVSPH,TMP          TRDIST > BSTDST, we've done better, skip it.
+               MCW  TRDIST,BSTDST       Remember better distance.
 
      * Compute surface normal.
      HITSPH    ZA   TRXH,XN             X
@@ -116,7 +120,13 @@
                MN   SHADES-9&X2,0&X1    Copy full character
                MZ   SHADES-9&X2,0&X1
 
-     MISSED    A    +1,XV               XV++
+     * Move to the next sphere in the scene.
+     ADVSPH    SBR  X3,25&X3            Go to next sphere.
+               BCE  ENDPX,0&X3,*        If end of scene, we're done with pixel.
+               B    NXTSPH              Try the next sphere.
+
+     * End of pixel.
+     ENDPX     A    +1,XV               XV++
                MA   @001@,X1            X1++
 
      * See if we're done.
@@ -152,6 +162,10 @@
      XV        DCW  00000               Direction
      YV        DCW  00000
      ZV        DCW  -00050
+
+     * Keep track distance to closest sphere for this pixel.
+     BSTDST    DCW  #10                 Best distance so far.
+     MAXDST    DCW  @9999999999@        Max distance (represents un-hit pixel).
 
      * Lighting and shading.
      XN        DCW  00000               Surface normal
@@ -540,17 +554,17 @@
 
      * Scene itself.
      SCCNT     DCW  2                   Number of spheres.
-     SCENE     DCW  00000               Sphere 0 center
-               DCW  00000
+     SCENE     DCW  -00080              Sphere 0 center
+               DCW  00020
                DCW  -00200
                DCW  00150               Sphere radius
                DCW  22500               Sphere radius squared
 
-               DCW  00030               Sphere 1 center
-               DCW  -00120
+               DCW  00080               Sphere 1 center
+               DCW  -00020
                DCW  -00200
-               DCW  00100               Sphere radius
-               DCW  10000               Sphere radius squared
+               DCW  00150               Sphere radius
+               DCW  22500               Sphere radius squared
 
      SCEND     DCW  @*****@             Mark end of scene.
 
