@@ -95,17 +95,15 @@
 
                SBR  PRARG,BRIGHT
                B    PRINT
-               BM   DARK,BRIGHT         Skip if negative (dark side of sphere).
+               BM   DARK,BRIGHT         Check if negative (dark side of sphere).
+               B    DRAW                Not negative, draw it.
 
-     * Draw bright pixel.
-               MN   BRIGHT-1,X2
+     DARK      S    BRIGHT              Zero out bright.
+
+     * Draw pixel.
+     DRAW      MN   BRIGHT-1,X2
                MN   SHADES-9&X2,0&X1
                MZ   SHADES-9&X2,0&X1
-               B    SKIP
-
-     * Draw dark pixel.
-     DARK      MN   @.@,0&X1
-               MZ   @.@,0&X1
 
      SKIP      A    +1,XV               XV++
                MA   @001@,X1            X1++
@@ -156,7 +154,7 @@
      * Constants.
      MAXX      DCW  +051                One past max XV
      MINY      DCW  -051                One past min Y
-     SHADES    DCW  @,-:;+=*?#@@        The various shades of pixels.
+     SHADES    DCW  @.,-:;=*?#@@        The various shades of pixels.
 
      * Work area.
      TMP3      DCW  000                 Temporary working space
