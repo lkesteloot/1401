@@ -11,7 +11,9 @@
 
      * Index registers.
                ORG  87
-     X1        DSA  0                   Index register 1 (print column).
+     X1        DSA  000                 Index register 1 (print column).
+               ORG  92
+     X2        DSA  000                 Index register 2 (shade).
 
      * Main routine.
                ORG  333
@@ -93,11 +95,17 @@
 
                SBR  PRARG,BRIGHT
                B    PRINT
-               BM   SKIP,BRIGHT
+               BM   DARK,BRIGHT         Skip if negative (dark side of sphere).
 
-     * Draw pixel.
-               MN   STAR,0&X1
-               MZ   STAR,0&X1
+     * Draw bright pixel.
+               MN   BRIGHT-1,X2
+               MN   SHADES-9&X2,0&X1
+               MZ   SHADES-9&X2,0&X1
+               B    SKIP
+
+     * Draw dark pixel.
+     DARK      MN   @.@,0&X1
+               MZ   @.@,0&X1
 
      SKIP      A    +1,XV               XV++
                MA   @001@,X1            X1++
@@ -148,7 +156,7 @@
      * Constants.
      MAXX      DCW  +051                One past max XV
      MINY      DCW  -051                One past min Y
-     STAR      DC   @*@
+     SHADES    DCW  @,-:;+=*?#@@        The various shades of pixels.
 
      * Work area.
      TMP3      DCW  000                 Temporary working space
