@@ -21,9 +21,6 @@
                ORG  333
      START     ZA   +50,YV              Reset YV
 
-               SBR  X3,SCENE
-               B    SELECT
-
      * Next line.
      NXTLN     SBR  X1,201              Reset column in printer buffer
                CS   332                 Clear printer area
@@ -39,13 +36,21 @@
                ZA   XV,TRXV
                ZA   YV,TRYV
                ZA   ZV,TRZV
-               B    TRACE
+
+               SBR  X3,SCENE            Select the first sphere
+     NXTSPH    B    SELECT
+
+               B    TRACE               Trace this sphere
 
      * See if we hit the sphere.
-               BCE  SKIP,TRHIT,0        Skip if missed.
+               BCE  HITSPH,TRHIT,1      Hit it, do lighting/shading.
+
+               SBR  X3,25&X3            Go to next sphere.
+               BCE  MISSED,0&X3,*       If end of scene, skip pixel.
+               B    NXTSPH
 
      * Compute surface normal.
-               ZA   TRXH,XN             X
+     HITSPH    ZA   TRXH,XN             X
                S    XC,XN                 - XC
                ZA   TRYH,YN             Y
                S    YC,YN                 - YC
@@ -111,7 +116,7 @@
                MN   SHADES-9&X2,0&X1    Copy full character
                MZ   SHADES-9&X2,0&X1
 
-     SKIP      A    +1,XV               XV++
+     MISSED    A    +1,XV               XV++
                MA   @001@,X1            X1++
 
      * See if we're done.
@@ -542,11 +547,11 @@
                DCW  22500               Sphere radius squared
 
                DCW  00030               Sphere 1 center
-               DCW  -00010
+               DCW  -00120
                DCW  -00200
                DCW  00100               Sphere radius
                DCW  10000               Sphere radius squared
 
-     SCEND     DCW  @0@                 Mark end of scene.
+     SCEND     DCW  @*****@             Mark end of scene.
 
                END  START
