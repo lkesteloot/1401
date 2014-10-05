@@ -146,9 +146,9 @@
      XN        DCW  00000               Surface normal
      YN        DCW  00000
      ZN        DCW  00000
-     XL        DCW  00057               Light vector * 100
-     YL        DCW  00057
-     ZL        DCW  00057
+     XL        DCW  00040               Light vector * 100, normalized
+     YL        DCW  00040
+     ZL        DCW  00081
      BRIGHT    DCW  00000               Brightness * 100
 
      * Constants.
