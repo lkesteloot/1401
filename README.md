@@ -1,19 +1,23 @@
 
 These are programs for the [IBM 1401](https://en.wikipedia.org/wiki/IBM_1401) computer.
 
-The main program is `ray.aut`, a simple ray tracer. It reads a scene
-description from punch cards and prints the image on the printer using ASCII
-art.
+The main program is `ray.aut`, a simple ray tracer that renders to the printer
+using character art. If the B switch is off, a hard-coded scene is rendered.
+If the B switch is on, the scene is loaded from a card deck that follows the
+program in the card reader. See the source code (at `READSC`) for the format,
+or use the `scene.card` file.
 
 ![Ray tracer output](ray.png)
 
 The `circle.aut` program draws a circle on the printer. It was written to test the
 loop and printing logic.
 
-The `ray.c` program is a fixed-point ray tracer in C. It's the prototype code for the
-1401 version. It prints the scene on the console. To run it, type `make`.
+The `ray.c` program is a fixed-point ray tracer in C. It was the prototype code
+for the 1401 version. It prints the scene on the console. To run it, type
+`make`.
 
-To run the `.aut` files, install ROPE (see below).
+To run the `.aut` files, install ROPE (see below) or run them on the IBM 1401
+at the [Computer History Museum](http://www.computerhistory.org/atchm/restoring-the-ibm-1401/).
 
 Resources
 ---------
