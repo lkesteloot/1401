@@ -17,9 +17,21 @@
                DCW  22                  Filler to avoid new card.
      X3        DSA  000                 Index register 2 (sphere pointer).
 
+     * Location of scene database. This is after the literal storage area.
+     * Each sphere is five numbers (X, Y, Z, R, R^2), each five digits long.
+     * After the last sphere there's a single star (*) character.
+     SCENE     EQU  3000
+
      * Main routine.
                ORG  333
-     START     ZA   +50,YV              Reset YV
+     START     BSS  HASDCK,B            Read scene from deck if B switch is on.
+               B    CPYSCN              Copy the hard-coded scene.
+               B    RENDER
+
+     HASDCK    B    READSC              Read the deck scene.
+
+     * Render the scene.
+     RENDER    ZA   +50,YV              Reset YV
 
      * Next line.
      NXTLN     SBR  X1,201              Reset column in printer buffer
@@ -54,7 +66,7 @@
                MCW  TRDIST,BSTDST       Remember better distance.
 
      * Compute surface normal.
-     HITSPH    ZA   TRXH,XN             X
+               ZA   TRXH,XN             X
                S    XC,XN                 - XC
                ZA   TRYH,YN             Y
                S    YC,YN                 - YC
@@ -533,7 +545,6 @@
      *
      *     X3      Address of sphere to copy. Use SCENE for
      *             the first sphere, SCENE+25 for the second, etc.
-     *             Stop when reaching SCEND.
      *
      * Upon return:
      *
@@ -543,8 +554,8 @@
 
      SELECT    SBR  SELECX&3            Save return address
 
-     * Copy to MCW instruction. Add 20 to get last byte of sphere.
-               SBR  SECOPY+3,20&X3
+     * Copy to MCW instruction. Add 24 to get last byte of sphere.
+               SBR  SECOPY+3,24&X3
 
      * Load into globals
      SECOPY    MCW  000,R2              Copy radius squared
@@ -552,9 +563,91 @@
 
      SELECX    B    000                 Return
 
-     * Scene itself.
-     SCCNT     DCW  2                   Number of spheres.
-     SCENE     DCW  -00080              Sphere 0 center
+     ****************************************************************
+     * Read a scene from a card deck.
+     *
+     * Entry point:  READSC
+     *
+     * The scene is one sphere per card, with the following four
+     * fields at these locations:
+     *
+     *    Location    Field
+     *    1-5         X location of sphere's center.
+     *    6-10        Y location of sphere's center.
+     *    11-15       Z location of sphere's center.
+     *    16-20       Radius of sphere.
+     *
+     * For negative numbers, the units digit must have the negative
+     * zone bits set. The rest of the card can be used as a comment.
+     *
+
+     READSC    SBR  READSX&3            Save return address
+
+               CS   80                  Clear word marks.
+               SW   1,6                 Set word marks in card.
+               SW   11,16
+               SBR  X3,SCENE            Select the first sphere.
+
+     RENEXT    R                        Read a card
+
+               LCA  20,19&X3            Copy radius
+               CHAIN 3                  Copy Z, Y, and X
+
+     * Square the radius
+               S    RESQR               Clear work area.
+               MCW  19&X3,RESQR-6       R
+               M    19&X3,RESQR           * R
+               SW   RESQR-4             Set end of R^2.
+               MZ   @2@,RESQR           Clear sign of R^2.
+               LCA  RESQR,24&X3         Copy to scene.
+               CW   RESQR-4             Clear end of R^2.
+
+               SBR  X3,25&X3            Next sphere.
+
+               BIN  REDONE,A            If last card, we're done.
+               B    RENEXT              Go to next card.
+
+     REDONE    MCW  @*@,0&X3            Mark end of scene.
+
+     READSX    B    000                 Return
+
+     * Internal work space.
+     RESQR     DCW  #11                 To square the radius.
+
+     ****************************************************************
+     * Copy the hard-coded scene to the scene database.
+     *
+     * Entry point:  CPYSCN
+     *
+     * Uses X1 and X3.
+
+     CPYSCN    SBR  CPYSCX&3            Save return address
+
+               SBR  X1,HRDSCN-4         Source
+               SBR  X3,SCENE            Destination
+
+     CPLOOP    MN   0&X1,0&X3           Move the BCD bits.
+               MZ   0&X1,0&X3           Move the zone bits.
+
+               BWZ  CPWM,0&X1,1         Word mark?
+               CW   0&X3                Clear word mark.
+               B    CPCONT
+
+     CPWM      SW   0&X3                Set word mark.
+
+     CPCONT    BCE  CPYSCX,0&X1,*       End of scene, done with copy.
+
+               SBR  X1,1&X1             Next byte.
+               SBR  X3,1&X3
+
+               B    CPLOOP
+
+     CPYSCX    B    000                 Return
+
+     ****************************************************************
+     * Hard-coded built-in scene.
+     *
+     HRDSCN    DCW  -00080              Sphere 0 center
                DCW  00020
                DCW  -00200
                DCW  00150               Sphere radius
@@ -566,6 +659,6 @@
                DCW  00150               Sphere radius
                DCW  22500               Sphere radius squared
 
-     SCEND     DCW  @*****@             Mark end of scene.
+               DCW  @*@                 Mark end of scene.
 
                END  START
