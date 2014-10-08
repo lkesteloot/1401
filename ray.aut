@@ -68,6 +68,8 @@
      * Next pixel.
      NXTPX     MCW  MAXDST,BSTDST       Huge distance so far (nothing hit).
                SBR  X3,SCENE            Select the first sphere.
+               MN   @ @,BRIGHT          Use space to indicate no brightness so far.
+               MZ   @ @,BRIGHT
 
      * Set up the ray from the camera.
                ZA   X0,TRX0
@@ -149,12 +151,20 @@
 
      * Clamp brightness to min of 0.
      NOCLMP    BM   DARK,BRIGHT         Check if negative (dark side of sphere).
-               B    DRAW                Not negative.
+               B    ADVSPH              Not negative.
 
      DARK      S    BRIGHT              Zero out bright.
 
-     * Draw pixel.
-     DRAW      SBR  X2,0                Clear X2
+     * Move to the next sphere in the scene.
+     ADVSPH    SBR  X3,25&X3            Go to next sphere.
+               BCE  ENDPX,0&X3,*        If end of scene, we're done with pixel.
+               B    NXTSPH              Try the next sphere.
+
+     * We're done checking all the spheres. If we lit anything, draw it now. We
+     * wait until here so that we don't accumulate the dithering error multiple
+     * times if we hit multiple objects in single pixel.
+     ENDPX     BCE  NODRAW,BRIGHT,      If we didn't shade, don't draw anything.
+               SBR  X2,0                Clear X2
                MN   BRIGHT-1,X2         X2 = BRIGHT/10
                MN   SHADES-9&X2,201&X1  Copy full character to printer buffer
                MZ   SHADES-9&X2,201&X1
@@ -202,13 +212,8 @@
                MZ   ERROR,ERROR-2                 / 100 (move sign)
                A    ERROR-2,4+X2        Add error to bottom-right pixel
 
-     * Move to the next sphere in the scene.
-     ADVSPH    SBR  X3,25&X3            Go to next sphere.
-               BCE  ENDPX,0&X3,*        If end of scene, we're done with pixel.
-               B    NXTSPH              Try the next sphere.
-
      * End of pixel.
-     ENDPX     A    +1,XV               XV++
+     NODRAW    A    +1,XV               XV++
                SBR  X1,1&X1             X1++
 
      * See if we're done.
