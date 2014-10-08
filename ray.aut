@@ -3,15 +3,28 @@
 
      ****************************************************************
      * Ray tracer
-     * Lawrence Kesteloot, 2014
      *
      * Ray-traces a scene and sends the resulting image to the
      * printer.
      *
+     * Copyright 2014 Lawrence Kesteloot
+     *
+     * Licensed under the Apache License, Version 2.0 (the "License");
+     * you may not use this file except in compliance with the License.
+     * You may obtain a copy of the License at
+     *
+     *     http://www.apache.org/licenses/LICENSE-2.0
+     *
+     * Unless required by applicable law or agreed to in writing, software
+     * distributed under the License is distributed on an "AS IS" BASIS,
+     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     * See the License for the specific language governing permissions and
+     * limitations under the License.
+     *
 
      * Index registers.
                ORG  87
-     X1        DSA  000                 Index register 1 (print column).
+     X1        DSA  000                 Index register 1 (column number, 0-based).
                DCW  11                  Filler to avoid new card.
      X2        DSA  000                 Index register 2 (shade).
                DCW  22                  Filler to avoid new card.
@@ -20,7 +33,7 @@
      * Location of scene database. This is after the literal storage area.
      * Each sphere is five numbers (X, Y, Z, R, R^2), each five digits long.
      * After the last sphere there's a single star (*) character.
-     SCENE     EQU  3000
+     SCENE     EQU  3500
 
      * Main routine.
                ORG  333
@@ -31,13 +44,26 @@
      HASDCK    B    READSC              Read the deck scene.
 
      * Render the scene.
-     RENDER    ZA   +50,YV              Reset YV
+     RENDER    ZA   +49,YV              Reset YV
+
+     * Clear dithering buffers.
+               SBR  ERNEXT,ERBUF1+1     Clear first buffer
+               B    ERCLR
+               SBR  ERNEXT,ERBUF2+1     Clear second buffer
+               B    ERCLR
+               SBR  ERTHIS,ERBUF1+1     Set buffer for this line
 
      * Next line.
-     NXTLN     SBR  X1,201              Reset column in printer buffer
+     NXTLN     SBR  X1,0                Reset column number
                CS   332                 Clear printer area
                CS
-               ZA   -50,XV              Reset XV
+               ZA   -49,XV              Reset XV
+
+     * Swap dithering buffers.
+               MCW  ERNEXT,TMP3
+               MCW  ERTHIS,ERNEXT
+               MCW  TMP3,ERTHIS
+               B    ERCLR               Clear next line's buffer
 
      * Next pixel.
      NXTPX     MCW  MAXDST,BSTDST       Huge distance so far (nothing hit).
@@ -111,16 +137,70 @@
                MZ   BRIGHT,BRIGHT-2     Move sign bit.
                ZA   BRIGHT-2,BRIGHT     / 100 (because of fixed point multiply)
 
-               BM   DARK,BRIGHT         Check if negative (dark side of sphere).
-               B    DRAW                Not negative, draw it.
+     * Add dithering error value to current brightness.
+               MCW  X1,X2               X1
+               A    X2,X2                  * 2 (two digits per error entry)
+               MA   ERTHIS,X2                  + ERTHIS
+               A    0+X2,BRIGHT         Add error to current value
+
+     * Clamp brightness to max of 99.
+               BCE  NOCLMP,BRIGHT-2,0   Skip clamp if hundreds digit is 0
+               ZA   +99,BRIGHT          Clamp to 99
+
+     * Clamp brightness to min of 0.
+     NOCLMP    BM   DARK,BRIGHT         Check if negative (dark side of sphere).
+               B    DRAW                Not negative.
 
      DARK      S    BRIGHT              Zero out bright.
 
      * Draw pixel.
      DRAW      SBR  X2,0                Clear X2
                MN   BRIGHT-1,X2         X2 = BRIGHT/10
-               MN   SHADES-9&X2,0&X1    Copy full character
-               MZ   SHADES-9&X2,0&X1
+               MN   SHADES-9&X2,201&X1  Copy full character to printer buffer
+               MZ   SHADES-9&X2,201&X1
+
+     * Compute error term (units digit of BRIGHT minus 5).
+               S    TMP3                Clear TMP3
+               MN   BRIGHT,TMP3         Copy units digit to TMP3
+               S    @5@,TMP3            Subtract 5 to be 0-centered
+
+     * Distribute the error term to neighboring pixels. The standard
+     * Floyd-Steinberg algorithm uses coefficients of 7/16, 3/16, 5/16,
+     * and 1/16 for the right, bottom-left, bottom, and bottom-right
+     * pixels, respectively. The "16" denominator was probably picked because
+     * it's easy to compute on a binary machine. Here we change it
+     * to be decimal-friendly: 44/100, 19/100, 31/100, and 6/100.
+
+     * 44/100 of error added to pixel on the right.
+               MCW  X1,X2               X1
+               A    X2,X2                  * 2 (two digits per error entry)
+               MA   ERTHIS,X2                  + ERTHIS
+               ZA   @44@,ERROR-4        44
+               M    TMP3,ERROR             * TMP3
+               MZ   ERROR,ERROR-2                 / 100 (move sign)
+               A    ERROR-2,2+X2        Add error to next pixel
+
+     * Get address of next line's error buffer.
+               MCW  X1,X2               X1
+               A    X2,X2                  * 2 (two digits per error entry)
+               S    @2@,X2                     - 2 (for left pixel)
+               MZ   @2@,X2              Clear zone bits.
+               MA   ERNEXT,X2                      + ERNEXT
+     * 19/100 of error added to pixel on the lower-left.
+               ZA   @19@,ERROR-4        19
+               M    TMP3,ERROR             * TMP3
+               MZ   ERROR,ERROR-2                 / 100 (move sign)
+               A    ERROR-2,0+X2        Add error to bottom-left pixel
+     * 31/100 of error added to pixel below.
+               ZA   @31@,ERROR-4        31
+               M    TMP3,ERROR             * TMP3
+               MZ   ERROR,ERROR-2                 / 100 (move sign)
+               A    ERROR-2,2+X2        Add error to bottom pixel
+     * 6/100 of error added to pixel on the lower-right.
+               ZA   @06@,ERROR-4        6
+               M    TMP3,ERROR             * TMP3
+               MZ   ERROR,ERROR-2                 / 100 (move sign)
+               A    ERROR-2,4+X2        Add error to bottom-right pixel
 
      * Move to the next sphere in the scene.
      ADVSPH    SBR  X3,25&X3            Go to next sphere.
@@ -129,7 +209,7 @@
 
      * End of pixel.
      ENDPX     A    +1,XV               XV++
-               MA   @001@,X1            X1++
+               SBR  X1,1&X1             X1++
 
      * See if we're done.
                ZA   MAXX,TMP3           MAXX
@@ -179,13 +259,14 @@
      BRIGHT    DCW  00000               Brightness * 100
 
      * Constants.
-     MAXX      DCW  +051                One past max XV
-     MINY      DCW  -051                One past min YV
+     MAXX      DCW  +050                One past max XV
+     MINY      DCW  -050                One past min YV
      SHADES    DCW  @.,-:;=*?#@@        The various shades of pixels.
 
      * Work area.
      TMP3      DCW  000                 Temporary working space
      TMP       DCW  #20                 Larger temporary space
+     ERROR     DCW  #6                  Dithering error
 
      ****************************************************************
      * Subroutine to trace a ray. Given a ray and a (global) scene,
@@ -380,7 +461,7 @@
      DOZ2      DCW  #5
 
      * Output fields.
-     DOTV      DCW  #11                 XXX might overflow?
+     DOTV      DCW  #11
 
      * Internal work space.
      DOTMP     DCW  #11
@@ -608,7 +689,7 @@
      *
      * Entry point:  CPYSCN
      *
-     * Uses X1 and X3.
+     * Note: Destroys X1 and X3.
 
      CPYSCN    SBR  CPYSCX&3            Save return address
 
@@ -632,6 +713,58 @@
                B    CPLOOP
 
      CPYSCX    B    000                 Return
+
+     ****************************************************************
+     * Clear the next error buffer.
+     *
+     * Entry point:  ERCLR 
+     *
+     * Clears the error buffer (ERBUF1 or ERBUF2) pointed to by ERNEXT.
+     * This means settings every two-byte pixel to 00, with a word
+     * mark on the high-order digit.
+     *
+     * Note: Destroys X2.
+     *
+
+     ERCLR     SBR  ERCLRX&3            Save return address
+
+               MCW  ERNEXT,X2           Move ERNEXT into our index
+
+     ERLOOP    LCA  @00@,1&X2           Save 00 with word mark
+               SBR  X2,2&X2             Increment X by 2
+               BCE  ERCLRX,0&X2,*       Check if end of buffer
+               B    ERLOOP              Next pixel
+
+     ERCLRX    B    000                 Return
+               NOP                      Word mark of B instruction
+
+     ****************************************************************
+     * Floyd-Steinberg dithering error buffers.
+     *
+     * We have two buffers: one for the current line and one for
+     * the next line. Each buffer has enough entries for each pixel,
+     * plus two for the pixels off the ends (so we don't have to do
+     * edge checking). Each pixel has two digits, for an error between
+     * -99 and 99.
+     *
+     * After each row, we swap which buffer we consider "this" line
+     * and which we consider "next" line.
+     *
+
+     ERBUF1    DC   0                   Byte before buffer.
+               DC   #50                 101 pixels, 2 digits per pixel
+               DC   #50
+               DC   #50
+               DC   #52
+               DC   @**@                End of buffer mark
+     ERBUF2    DC   0                   Byte before buffer.
+               DC   #50                 101 pixels, 2 digits per pixel
+               DC   #50
+               DC   #50
+               DC   #52
+               DC   @**@                End of buffer mark
+     ERTHIS    DCW  000                 Points to start of ERBUF* for this line
+     ERNEXT    DCW  000                 Points to start of ERBUF* for next line
 
      ****************************************************************
      * Hard-coded built-in scene.

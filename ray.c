@@ -13,7 +13,6 @@
 //    limitations under the License.
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 // Fixed-point ray tracer prototype for the IBM 1401 version.
@@ -51,6 +50,10 @@ int main()
     char line[200];     // Line being printed.
     word column;        // Column being printed.
 
+    // For Floyd-Steinberg:
+    word errors[2][200]; // Double-buffered error line.
+    word currentErrors = 0; // Which error line we're rendering now.
+
     // Position of ray.
     x0 = 0;
     y0 = 0;
@@ -70,7 +73,13 @@ int main()
     zl = 57;
 
     for (yv = 50; yv >= -50; yv -= 2) {
+        // Clear current line.
         memset(line, ' ', sizeof(line));
+
+        // Clear next line's errors.
+        for (word i = 0; i < 200; i++) {
+            errors[1 - currentErrors][i] = 0;
+        }
 
         for (xv = -50, column = 0; xv <= 50; xv++, column++) {
             // Ray relative to sphere.
@@ -101,25 +110,40 @@ int main()
                     word zn = z - zc;
 
                     // Dot with light vector.
-                    word bright = (xn*xl + yn*yl + zn*zl)/r;
+                    word bright = (xn*xl + yn*yl + zn*zl)/r + errors[currentErrors][column];
                     if (bright < 0) {
                         // Dark side of sphere.
                         bright = 0;
                     }
 
-                    // Add some noise.
-                    bright += (rand() % 7) - 3;
-
                     // Clamp.
-                    if (bright < 0) {
-                        bright = 0;
+                    if (bright < 5) {
+                        bright = 5;
                     }
                     if (bright > 99) {
                         bright = 99;
                     }
 
+                    // Quantize.
+                    word quantBright = bright/10;
+
+                    // Floyd-Steinberg dithering.
+                    word error = bright - quantBright*10 - 5;
+                    word errorLowerLeft = error*19/100;
+                    word errorBelow = error*31/100;
+                    word errorBelowRight = error*6/100;
+                    word errorRight = error - errorLowerLeft - errorBelow - errorBelowRight;
+                    if (column - 1 < 200) {
+                        errors[currentErrors][column + 1] += errorRight;
+                        errors[1 - currentErrors][column + 1] += errorBelowRight;
+                    }
+                    if (column > 0) {
+                        errors[1 - currentErrors][column - 1] += errorLowerLeft;
+                    }
+                    errors[1 - currentErrors][column] += errorBelow;
+
                     // Convert to ASCII art.
-                    line[column] = ".,-:;=*?#@"[bright/10];
+                    line[column] = ".,-:;=*?#@"[quantBright];
                 }
             }
         }
@@ -127,6 +151,9 @@ int main()
         // Print the line.
         line[column] = '\0';
         printf("%s\n", line);
+
+        // Swap errors.
+        currentErrors = 1 - currentErrors;
     }
 
     return 0;

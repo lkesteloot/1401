@@ -26,4 +26,5 @@ Resources
 - [1401 Reference manual](http://bitsavers.trailing-edge.com/pdf/ibm/140x/A24-1403-5_1401_Reference_Apr62.pdf)
 - [Autocoder specification](http://www.bitsavers.org/pdf/ibm/140x/J24-1434-2_autocoderSpec_61.pdf)
 - [Coding techniques](http://bitsavers.trailing-edge.com/pdf/ibm/140x/TIE4-0064_1401codingTechniq.pdf)
+- [IBM 1401 history, architecture, and details of the Computer History Museum one](http://ibm-1401.info/1401GuidePosterV9.html)
 
