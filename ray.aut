@@ -143,7 +143,7 @@
                MCW  X1,X2               X1
                A    X2,X2                  * 2 (two digits per error entry)
                MA   ERTHIS,X2                  + ERTHIS
-               A    0+X2,BRIGHT         Add error to current value
+               A    2+X2,BRIGHT         Add error to current value
 
      * Clamp brightness to max of 99.
                BCE  NOCLMP,BRIGHT-2,0   Skip clamp if hundreds digit is 0
@@ -188,12 +188,11 @@
                ZA   @44@,ERROR-4        44
                M    TMP3,ERROR             * TMP3
                MZ   ERROR,ERROR-2                 / 100 (move sign)
-               A    ERROR-2,2+X2        Add error to next pixel
+               A    ERROR-2,4+X2        Add error to next pixel
 
      * Get address of next line's error buffer.
                MCW  X1,X2               X1
                A    X2,X2                  * 2 (two digits per error entry)
-               S    @2@,X2                     - 2 (for left pixel)
                MZ   @2@,X2              Clear zone bits.
                MA   ERNEXT,X2                      + ERNEXT
      * 19/100 of error added to pixel on the lower-left.
@@ -224,7 +223,8 @@
      * Print our line.
                W
 
-               A    -2,YV               YV--
+     * Next line. Move by 2 to roughly match the aspect ratio of the pixel.
+               A    -2,YV               YV -= 2
 
      * See if we're done.
                ZA   MINY,TMP3           MINY
@@ -264,7 +264,7 @@
      BRIGHT    DCW  00000               Brightness * 100
 
      * Constants.
-     MAXX      DCW  +050                One past max XV
+     MAXX      DCW  +049                One past max XV
      MINY      DCW  -050                One past min YV
      SHADES    DCW  @.,-:;=*?#@@        The various shades of pixels.
 
