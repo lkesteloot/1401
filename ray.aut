@@ -136,6 +136,8 @@
                M    ZL,TMP                 * ZL
                A    TMP,BRIGHT
 
+               MZ   BRIGHT,BRTRND       Move sign bit to rounding value.
+               A    BRTRND,BRIGHT       Add 50 (or -50) to round instead of truncate.
                MZ   BRIGHT,BRIGHT-2     Move sign bit.
                ZA   BRIGHT-2,BRIGHT     / 100 (because of fixed point multiply)
 
@@ -272,6 +274,7 @@
      TMP3      DCW  000                 Temporary working space
      TMP       DCW  #20                 Larger temporary space
      ERROR     DCW  #6                  Dithering error
+     BRTRND    DCW  +50                 For rounding BRIGHT.
 
      ****************************************************************
      * Subroutine to trace a ray. Given a ray and a (global) scene,
