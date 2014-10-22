@@ -507,9 +507,11 @@
                ZA   SQIN,SQTMP          N/X
                D    SQOUT,SQTMP-24
                A    SQOUT,SQTMP-26          + X
-               ZA   SQTMP-26,SQTMP
-               D    @2@,SQTMP-24        (     )/2
-               ZA   SQTMP-2,SQOUT       Save quotient.
+               ZA   SQTMP-26,SQOUT      Save it
+               A    SQTMP-26            (     )*2
+               A    SQTMP-26            (     )*4
+               A    SQOUT,SQTMP-26      (     )*5
+               ZA   SQTMP-27,SQOUT               /10
                C    SQOUT,SQPREV        X = previous X?
                BE   SQRTX               Yes, we're done.
                S    SQOUT,SQPREV        Compute SQPREV - SQOUT
