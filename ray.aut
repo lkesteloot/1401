@@ -268,7 +268,7 @@
      * Constants.
      MAXX      DCW  +049                One past max XV
      MINY      DCW  -050                One past min YV
-     SHADES    DCW  @.,-:=*?&#@@        The various shades of pixels.
+     SHADES    DCW  @.,-:=*?#&@@        The various shades of pixels.
 
      * Work area.
      TMP3      DCW  000                 Temporary working space
