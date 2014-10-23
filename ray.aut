@@ -268,7 +268,7 @@
      * Constants.
      MAXX      DCW  +049                One past max XV
      MINY      DCW  -050                One past min YV
-     SHADES    DCW  @.,-:;=*?#@@        The various shades of pixels.
+     SHADES    DCW  @.,-:=*?&#@@        The various shades of pixels.
 
      * Work area.
      TMP3      DCW  000                 Temporary working space
@@ -780,7 +780,7 @@
      * Hard-coded built-in scene.
      *
      HRDSCN    DCW  -00080              Sphere 0 center
-               DCW  00020
+               DCW  00080
                DCW  -00200
                DCW  00150               Sphere radius
                DCW  22500               Sphere radius squared
