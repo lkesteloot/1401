@@ -1,3 +1,0 @@
-attach cdr ray.cd
-attach lpt ray.out
-boot cdr

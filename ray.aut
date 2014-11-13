@@ -37,11 +37,12 @@
 
      * Main routine.
                ORG  333
-     START     BSS  HASDCK,B            Read scene from deck if B switch is on.
-               B    CPYSCN              Copy the hard-coded scene.
-               B    RENDER
+     *START     BSS  HASDCK,B            Read scene from deck if B switch is on.
+     START     B    CPYSCN              Copy the hard-coded scene.
+     *          B    RENDER
 
-     HASDCK    B    READSC              Read the deck scene.
+     *HASDCK    B    READSC              Read the deck scene.
+     *          B    READSC              Read the deck scene.
 
      * Render the scene.
      RENDER    ZA   +49,YV              Reset YV
